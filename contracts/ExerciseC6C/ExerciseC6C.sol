@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.16;
 
 // It's important to avoid vulnerabilities due to numeric overflow bugs
 // OpenZeppelin's SafeMath library, when used correctly, protects agains such bugs
@@ -13,7 +13,7 @@ contract ExerciseC6C {
     /********************************************************************************************/
     /*                                       DATA VARIABLES                                     */
     /********************************************************************************************/
-
+    mapping(address => uint256) authorizedContracts;
     struct Profile {
         string id;
         bool isRegistered;
@@ -60,10 +60,23 @@ contract ExerciseC6C {
         _;
     }
 
+    modifier isCallerAuthorized()
+    {
+        require(authorizedContracts[msg.sender] == 1, "Caller is not authorized");
+        _;
+    }
     /********************************************************************************************/
     /*                                       UTILITY FUNCTIONS                                  */
     /********************************************************************************************/
 
+    function authorizeContract(address dataContract) external requireContractOwner 
+    {
+        authorizedContracts[dataContract] = 1;
+    }
+    function deauthorizeContract(address dataContract) external requireContractOwner 
+    {
+        delete authorizedContracts[dataContract];
+    }
    /**
     * @dev Check if an employee is registered
     *
@@ -71,7 +84,7 @@ contract ExerciseC6C {
     */   
     function isEmployeeRegistered
                             (
-                                string id
+                                string calldata id
                             )
                             external
                             view
@@ -84,9 +97,10 @@ contract ExerciseC6C {
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
 
+
     function registerEmployee
                                 (
-                                    string id,
+                                    string calldata id,
                                     bool isAdmin,
                                     address wallet
                                 )
@@ -107,7 +121,7 @@ contract ExerciseC6C {
 
     function getEmployeeBonus
                             (
-                                string id
+                                string calldata id
                             )
                             external
                             view
@@ -119,54 +133,18 @@ contract ExerciseC6C {
 
     function updateEmployee
                                 (
-                                    string id,
+                                    string calldata id,
                                     uint256 sales,
                                     uint256 bonus
 
                                 )
-                                internal
-                                requireContractOwner
+                                external
     {
         require(employees[id].isRegistered, "Employee is not registered.");
 
         employees[id].sales = employees[id].sales.add(sales);
         employees[id].bonus = employees[id].bonus.add(bonus);
 
-    }
-
-    function calculateBonus
-                            (
-                                uint256 sales
-                            )
-                            internal
-                            view
-                            requireContractOwner
-                            returns(uint256)
-    {
-        if (sales < 100) {
-            return sales.mul(5).div(100);
-        }
-        else if (sales < 500) {
-            return sales.mul(7).div(100);
-        }
-        else {
-            return sales.mul(10).div(100);
-        }
-    }
-
-    function addSale
-                                (
-                                    string id,
-                                    uint256 amount
-                                )
-                                external
-                                requireContractOwner
-    {
-        updateEmployee(
-                        id,
-                        amount,
-                        calculateBonus(amount)
-        );
     }
 
 
