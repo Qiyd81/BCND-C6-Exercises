@@ -11,14 +11,14 @@ contract('ExerciseC6D', async (accounts) => {
 
     // Watch contract events
     const ON_TIME = 10;
-    let events = config.exerciseC6D.allEvents();
-    events.watch((error, result) => {
-      if (result.event === 'OracleRequest') {
-        console.log(`\n\nOracle Requested: index: ${result.args.index.toNumber()}, flight:  ${result.args.flight}, timestamp: ${result.args.timestamp.toNumber()}`);
-      } else {
-        console.log(`\n\nFlight Status Available: flight: ${result.args.flight}, timestamp: ${result.args.timestamp.toNumber()}, status: ${result.args.status.toNumber() == ON_TIME ? 'ON TIME' : 'DELAYED'}, verified: ${result.args.verified ? 'VERIFIED' : 'UNVERIFIED'}`);
-      }
-    });
+    // let events = config.exerciseC6D.allEvents();
+    // events.watch((error, result) => {
+    //   if (result.event === 'OracleRequest') {
+    //     console.log(`\n\nOracle Requested: index: ${result.args.index.toNumber()}, flight:  ${result.args.flight}, timestamp: ${result.args.timestamp.toNumber()}`);
+    //   } else {
+    //     console.log(`\n\nFlight Status Available: flight: ${result.args.flight}, timestamp: ${result.args.timestamp.toNumber()}, status: ${result.args.status.toNumber() == ON_TIME ? 'ON TIME' : 'DELAYED'}, verified: ${result.args.verified ? 'VERIFIED' : 'UNVERIFIED'}`);
+    //   }
+    // });
 
     // Past events
     //events.get((error, logs) => {  });
@@ -34,6 +34,8 @@ contract('ExerciseC6D', async (accounts) => {
     // ACT
     for(let a=1; a<TEST_ORACLES_COUNT; a++) {      
       await config.exerciseC6D.registerOracle({ from: accounts[a], value: fee });
+      let result = await config.exerciseC6D.getOracle.call(accounts[a]);
+      console.log('Oracle Registered:', result[0], result[1], result[2]);
     }
   });
 

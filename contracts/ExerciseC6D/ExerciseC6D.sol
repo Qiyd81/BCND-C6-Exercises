@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.16;
 
 // It's important to avoid vulnerabilities due to numeric overflow bugs
 // OpenZeppelin's SafeMath library, when used correctly, protects agains such bugs
@@ -93,12 +93,13 @@ contract ExerciseC6D {
     {
         // CODE EXERCISE 1: Require registration fee
         /* Enter code here */
-
+        require(msg.value == REGISTRATION_FEE, "Registration fee is required");
         // CODE EXERCISE 1: Generate three random indexes (range 0-9) using generateIndexes for the calling oracle
         /* Enter code here */
-
+        uint8[3] memory indexes = generateIndexes(msg.sender);
         // CODE EXERCISE 1: Assign the indexes to the oracle and save to the contract state
         /* Enter code here */
+        oracles[msg.sender] = indexes;
     }
 
     function getOracle
@@ -108,7 +109,7 @@ contract ExerciseC6D {
                         external
                         view
                         requireContractOwner
-                        returns(uint8[3])
+                        returns(uint8[3] memory)
     {
         return oracles[account];
     }
@@ -131,7 +132,7 @@ contract ExerciseC6D {
     // Generate a request
     function fetchFlightStatus
                         (
-                            string flight,
+                            string calldata flight,
                             uint256 timestamp                            
                         )
                         external
@@ -139,7 +140,7 @@ contract ExerciseC6D {
         // Generate a number between 0 - 9 to determine which oracles may respond
 
         // CODE EXERCISE 2: Replace the hard-coded value of index with a random index based on the calling account
-        uint8 index = 0;  /* Replace code here */
+        uint8 index = getRandomIndex(msg.sender);  /* Replace code here */
 
 
         // Generate a unique key for storing the request
@@ -151,7 +152,7 @@ contract ExerciseC6D {
 
         // CODE EXERCISE 2: Notify oracles that match the index value that they need to fetch flight status
         /* Enter code here */
-
+        emit OracleRequest(index, flight, timestamp);
     }
 
     /************************************ END: Oracle Data Request ************************************/
@@ -169,7 +170,7 @@ contract ExerciseC6D {
     function submitOracleResponse
                         (
                             uint8 index,
-                            string flight,
+                            string calldata flight,
                             uint256 timestamp,
                             uint8 statusId
                         )
@@ -179,8 +180,8 @@ contract ExerciseC6D {
 
 
         // CODE EXERCISE 3: Require that the response is being submitted for a request that is still open
-        bytes32 key = 0; /* Replace 0 with code to generate a key using index, flight and timestamp */
-
+        bytes32 key = keccak256(abi.encodePacked(index, flight, timestamp)); /* Replace 0 with code to generate a key using index, flight and timestamp */
+        require(oracleResponses[key].isOpen, "Flight or timestamp do not match oracle request");
 
         oracleResponses[key].responses[statusId].push(msg.sender);
 
@@ -190,10 +191,10 @@ contract ExerciseC6D {
 
             // CODE EXERCISE 3: Prevent any more responses since MIN_RESPONSE threshold has been reached
             /* Enter code here */
-
+            oracleResponses[key].isOpen = false;
             // CODE EXERCISE 3: Announce to the world that verified flight status information is available
             /* Enter code here */
-
+            emit FlightStatusInfo(flight, timestamp, statusId, true);
             // Save the flight information for posterity
             bytes32 flightKey = keccak256(abi.encodePacked(flight, timestamp));
             flights[flightKey] = FlightStatus(true, statusId);
@@ -202,6 +203,7 @@ contract ExerciseC6D {
 
             // CODE EXERCISE 3: Announce to the world that verified flight status information is available
             /* Enter code here */
+            emit FlightStatusInfo(flight, timestamp, statusId, false);
         }
     }
 
@@ -215,16 +217,15 @@ contract ExerciseC6D {
     // Query the status of any flight
     function viewFlightStatus
                             (
-                                string flight,
+                                string calldata flight,
                                 uint256 timestamp
                             )
                             external
                             view
                             returns(uint8)
     {
-            require(flights[flightKey].hasStatus, "Flight status not available");
-
             bytes32 flightKey = keccak256(abi.encodePacked(flight, timestamp));
+            require(flights[flightKey].hasStatus, "Flight status not available");
             return flights[flightKey].status;
     }
 
@@ -235,7 +236,7 @@ contract ExerciseC6D {
                                 address account         
                             )
                             internal
-                            returns(uint8[3])
+                            returns(uint8[3] memory)
     {
         uint8[3] memory indexes;
         indexes[0] = getRandomIndex(account);
